@@ -1,7 +1,7 @@
 import { Box } from "@/components/ui/box";
 import { Button, ButtonGroup, ButtonText } from "@/components/ui/button";
 import { Center } from "@/components/ui/center";
-import NativeBooleanTest from "@/specs/NativeBooleanTest";
+import NativeCoapClient from "@/specs/NativeCoapClient";
 import useDeviceStore from "@/stores/device";
 import { router } from "expo-router";
 
@@ -9,31 +9,28 @@ export default function Index() {
   const { deviceId, setDeviceId } = useDeviceStore();
 
   const handleLowVisionFlux = () => {
-    fetch("http://192.168.0.194:3000/proxy/deviceAuth", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ deviceId }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.data.deviceId) {
-          setDeviceId(data.data.deviceId);
+    const payload = JSON.stringify({ deviceId });
+
+    NativeCoapClient?.sendCoapRequest(
+      "POST",
+      "192.168.1.2:5683/deviceAuth",
+      payload
+    )
+      .then((response) => {
+        const parsedResponse = JSON.parse(response);
+        const parsedData = JSON.parse(parsedResponse.body.data);
+
+        if (parsedData.deviceId) {
+          setDeviceId(parsedData.deviceId);
+          router.push("/sensorsDataCapture");
+        } else {
+          throw new Error("Acesso negado?");
         }
-        router.push("/sensorsDataCapture");
       })
       .catch((error) => {
-        console.error(
-          "Erro ao fazer a requisição para o servidor proxy:",
-          error
-        );
+        console.error("Erro ao enviar requisição CoAP:", error);
       });
-
-    // const teste = NativeBooleanTest?.getValue();
-
-    // console.log("Retorno:", teste);
-  }; //TODO: Estudar a estrutura da requisição (try, then, catch)
+  };
 
   return (
     <Box className="h-full bg-white dark:bg-slate-900">

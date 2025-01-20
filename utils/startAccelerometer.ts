@@ -1,15 +1,22 @@
 import { Accelerometer } from "expo-sensors";
 
-export async function startAccelerometer() {
-  const available = await Accelerometer.isAvailableAsync();
-  if (!available) {
-    throw new Error("Acelerômetro não está disponível.");
-  }
+let accelerometerSubscription: any = null;
 
-  return new Promise((resolve) => {
-    const subscription = Accelerometer.addListener((accelerometerData) => {
-      subscription.remove();
-      resolve(accelerometerData);
-    });
+export function startAccelerometer(setData: (data: any) => void) {
+  Accelerometer.isAvailableAsync().then((available) => {
+    if (available) {
+      accelerometerSubscription = Accelerometer.addListener((data) => {
+        setData(data);
+      });
+    } else {
+      console.error("Acelerômetro não está disponível.");
+    }
   });
+}
+
+export function stopAccelerometer() {
+  if (accelerometerSubscription) {
+    accelerometerSubscription.remove();
+    accelerometerSubscription = null;
+  }
 }

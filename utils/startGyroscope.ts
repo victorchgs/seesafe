@@ -1,15 +1,22 @@
 import { Gyroscope } from "expo-sensors";
 
-export async function startGyroscope() {
-  const available = await Gyroscope.isAvailableAsync();
-  if (!available) {
-    throw new Error("Giroscópio não está disponível.");
-  }
+let gyroscopeSubscription: any = null;
 
-  return new Promise((resolve) => {
-    const subscription = Gyroscope.addListener((gyroscopeData) => {
-      subscription.remove();
-      resolve(gyroscopeData);
-    });
+export function startGyroscope(setData: (data: any) => void) {
+  Gyroscope.isAvailableAsync().then((available) => {
+    if (available) {
+      gyroscopeSubscription = Gyroscope.addListener((data) => {
+        setData(data);
+      });
+    } else {
+      console.error("Giroscópio não está disponível.");
+    }
   });
+}
+
+export function stopGyroscope() {
+  if (gyroscopeSubscription) {
+    gyroscopeSubscription.remove();
+    gyroscopeSubscription = null;
+  }
 }
