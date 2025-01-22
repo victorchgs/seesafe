@@ -19,8 +19,29 @@ export default function Index() {
     NativeDepthEstimation?.getDepthMap(base64Data)
       .then((depthMapJson) => {
         const depthMap = JSON.parse(depthMapJson);
-        console.log("Mapa de profundidade:", depthMap);
-        // Adicione lógica para usar o mapa de profundidade aqui
+
+        // Encontrar o valor máximo na matriz de profundidade original
+        const maxDepthValue = Math.max(...depthMap.flat());
+
+        // Definir as coordenadas de corte para uma região menor
+        const startX = 64; // Margem esquerda
+        const endX = 194; // Margem direita
+        const startY = 0; // Margem superior
+        const endY = 190; // Margem inferior
+
+        // Cortar a matriz central
+        const centralDepthMap = depthMap
+          .slice(startY, endY)
+          .map((row) => row.slice(startX, endX));
+
+        // Verificar objetos próximos com base em um percentual do valor máximo da matriz original
+        const proximityThreshold = 0.75 * maxDepthValue;
+        const nearbyDetected = centralDepthMap
+          .flat()
+          .some((value) => value > proximityThreshold);
+
+        console.log("Mapa de profundidade central:", centralDepthMap);
+        console.log("Objetos próximos detectados:", nearbyDetected);
       })
       .catch((error) => {
         console.error("Erro ao obter o mapa de profundidade:", error);
