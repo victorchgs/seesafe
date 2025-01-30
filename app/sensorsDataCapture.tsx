@@ -3,66 +3,180 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Center } from "@/components/ui/center";
 import NativeCoapClient from "@/specs/NativeCoapClient";
 import useDeviceStore from "@/stores/device";
-import {
-  startAccelerometer,
-  stopAccelerometer,
-} from "@/utils/startAccelerometer";
-import { startGeolocation } from "@/utils/startGeolocation";
-import { startGyroscope, stopGyroscope } from "@/utils/startGyroscope";
+import { COAP_SERVER_URL } from "@env";
+import * as Location from "expo-location";
 import { router } from "expo-router";
+import {
+  Accelerometer,
+  AccelerometerMeasurement,
+  Gyroscope,
+  GyroscopeMeasurement,
+} from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 
 export default function SensorsDataCapture() {
   const { deviceId } = useDeviceStore();
-  const [accelerometerData, setAccelerometerData] = useState<any>(null);
-  const [gyroscopeData, setGyroscopeData] = useState<any>(null);
-  const [geolocationData, setGeolocationData] = useState<any>(null);
+  const [accelerometerData, setAccelerometerData] = useState<
+    AccelerometerMeasurement[]
+  >([]);
+  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeMeasurement[]>(
+    []
+  );
+  const [locationData, setLocationData] =
+    useState<Location.LocationObject | null>(null);
+  const tempAccelerometerData = useRef<AccelerometerMeasurement[]>([]);
+  const tempGyroscopeData = useRef<GyroscopeMeasurement[]>([]);
+  const accelerometerDataRef = useRef(accelerometerData);
+  const gyroscopeDataRef = useRef(gyroscopeData);
+  const locationDataRef = useRef(locationData);
+  const captureInterval = 100;
+  const sendInterval = 6000;
+  const maxChunkSize = 700;
 
-  const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const sendIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const sendIntervalMs = 5000;
-  const captureIntervalMs = sendIntervalMs - 500;
+  const chunkPayload = (payload: string, size: number) => {
+    const numChunks = Math.ceil(payload.length / size);
+    const chunks = [];
 
-  const captureSensorsData = () => {
-    startAccelerometer(setAccelerometerData);
-    startGyroscope(setGyroscopeData);
-    startGeolocation()
-      .then((location) => setGeolocationData(location))
-      .catch((error) => console.error("Erro ao capturar localização:", error));
-  };
+    for (let i = 0; i < numChunks; i++) {
+      chunks.push(payload.slice(i * size, (i + 1) * size));
+    }
 
-  const sendDataToServer = () => {
-    const data = {
-      deviceId,
-      accelerometerData,
-      gyroscopeData,
-      geolocationData,
-    };
-
-    const payload = JSON.stringify(data);
-
-    NativeCoapClient?.sendCoapRequest(
-      "POST",
-      "192.168.1.2:5683/sensorsDataCapture",
-      payload
-    ).catch((error) => {
-      console.error("Erro ao enviar dados para o servidor:", error);
-    });
+    return chunks;
   };
 
   useEffect(() => {
-    captureIntervalRef.current = setInterval(
-      captureSensorsData,
-      captureIntervalMs
-    );
+    let accelerometerSubscription: any;
+    let gyroscopeSubscription: any;
+    let locationSubscription: any;
 
-    sendIntervalRef.current = setInterval(sendDataToServer, sendIntervalMs);
+    accelerometerDataRef.current = accelerometerData;
+    gyroscopeDataRef.current = gyroscopeData;
+    locationDataRef.current = locationData;
+
+    const startCapturing = async () => {
+      const { status: locationStatus } =
+        await Location.requestForegroundPermissionsAsync();
+      if (locationStatus !== "granted") {
+        console.warn("Localização não permitida");
+        return;
+      }
+
+      accelerometerSubscription = Accelerometer.addListener(
+        (data: AccelerometerMeasurement) => {
+          tempAccelerometerData.current.push(data);
+          if (
+            tempGyroscopeData.current.length > 0 &&
+            tempAccelerometerData.current.length >=
+              tempGyroscopeData.current.length
+          ) {
+            const matchingLength = tempGyroscopeData.current.length;
+            const accelerometerBatch = tempAccelerometerData.current.splice(
+              0,
+              matchingLength
+            );
+            const gyroscopeBatch = tempGyroscopeData.current.splice(
+              0,
+              matchingLength
+            );
+
+            accelerometerDataRef.current = [
+              ...accelerometerDataRef.current,
+              ...accelerometerBatch,
+            ];
+            gyroscopeDataRef.current = [
+              ...gyroscopeDataRef.current,
+              ...gyroscopeBatch,
+            ];
+            setAccelerometerData(accelerometerDataRef.current);
+            setGyroscopeData(gyroscopeDataRef.current);
+          }
+        }
+      );
+      Accelerometer.setUpdateInterval(captureInterval);
+
+      gyroscopeSubscription = Gyroscope.addListener(
+        (data: GyroscopeMeasurement) => {
+          tempGyroscopeData.current.push(data);
+          if (
+            tempAccelerometerData.current.length > 0 &&
+            tempGyroscopeData.current.length >=
+              tempAccelerometerData.current.length
+          ) {
+            const matchingLength = tempAccelerometerData.current.length;
+            const accelerometerBatch = tempAccelerometerData.current.splice(
+              0,
+              matchingLength
+            );
+            const gyroscopeBatch = tempGyroscopeData.current.splice(
+              0,
+              matchingLength
+            );
+
+            accelerometerDataRef.current = [
+              ...accelerometerDataRef.current,
+              ...accelerometerBatch,
+            ];
+            gyroscopeDataRef.current = [
+              ...gyroscopeDataRef.current,
+              ...gyroscopeBatch,
+            ];
+            setAccelerometerData(accelerometerDataRef.current);
+            setGyroscopeData(gyroscopeDataRef.current);
+          }
+        }
+      );
+      Gyroscope.setUpdateInterval(captureInterval);
+
+      locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: captureInterval,
+        },
+        (location: Location.LocationObject) => {
+          locationDataRef.current = location;
+          setLocationData(location);
+        }
+      );
+    };
+
+    startCapturing();
+
+    const sendDataInterval = setInterval(() => {
+      const payload = JSON.stringify({
+        deviceId,
+        accelerometerData: accelerometerDataRef.current,
+        gyroscopeData: gyroscopeDataRef.current,
+        locationData: locationDataRef.current,
+      });
+
+      const payloadChunks = chunkPayload(payload, maxChunkSize);
+
+      payloadChunks.forEach((chunk, index) => {
+        const chunkPayload = JSON.stringify({
+          index,
+          totalChunks: payloadChunks.length,
+          chunk,
+          deviceId,
+        });
+
+        NativeCoapClient?.sendCoapRequest(
+          "POST",
+          `${COAP_SERVER_URL}/sensorsDataCapture`,
+          chunkPayload
+        );
+      });
+
+      setAccelerometerData([]);
+      setGyroscopeData([]);
+      accelerometerDataRef.current = [];
+      gyroscopeDataRef.current = [];
+    }, sendInterval);
 
     return () => {
-      if (captureIntervalRef.current) clearInterval(captureIntervalRef.current);
-      if (sendIntervalRef.current) clearInterval(sendIntervalRef.current);
-      stopAccelerometer();
-      stopGyroscope();
+      accelerometerSubscription && accelerometerSubscription.remove();
+      gyroscopeSubscription && gyroscopeSubscription.remove();
+      locationSubscription && locationSubscription.remove();
+      clearInterval(sendDataInterval);
     };
   }, []);
 
