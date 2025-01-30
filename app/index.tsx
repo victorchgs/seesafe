@@ -1,3 +1,4 @@
+import { COAP_SERVER_URL } from "@env";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonGroup, ButtonText } from "@/components/ui/button";
 import { Center } from "@/components/ui/center";
@@ -13,7 +14,7 @@ export default function Index() {
 
     NativeCoapClient?.sendCoapRequest(
       "POST",
-      "192.168.1.2:5683/deviceAuth",
+      `${COAP_SERVER_URL}/deviceAuth`,
       payload
     )
       .then((response) => {
@@ -37,7 +38,9 @@ export default function Index() {
       <Center className="h-full">
         <ButtonGroup space="4xl">
           <Button
-            onPress={handleLowVisionFlux}
+            onPress={() => {
+              handleLowVisionFlux();
+            }}
             className="h-auto py-5 px-7 rounded-2xl"
           >
             <ButtonText className="text-2xl">Auxíliar de locomoção</ButtonText>
