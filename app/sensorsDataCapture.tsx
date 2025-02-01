@@ -20,8 +20,8 @@ export default function SensorsDataCapture() {
 
   const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sendIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const sendIntervalMs = 1000;
-  const captureIntervalMs = sendIntervalMs - 500;
+  const sendIntervalMs = 5000;
+  const captureIntervalMs = sendIntervalMs - 100;
 
   const captureSensorsData = () => {
     startAccelerometer(setAccelerometerData);
@@ -43,7 +43,7 @@ export default function SensorsDataCapture() {
 
     NativeCoapClient?.sendCoapRequest(
       "POST",
-      "192.168.0.194:5683/sensorsDataCapture",
+      "192.168.0.194/sensorsDataCapture",
       payload
     ).catch((error) => {
       console.error("Erro ao enviar dados para o servidor:", error);
