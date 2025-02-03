@@ -15,6 +15,7 @@ import com.facebook.soloader.SoLoader
 import com.anonymous.nativebooleantest.NativeBooleanTestPackage
 import com.anonymous.nativecoapclient.NativeCoapClientPackage
 import com.anonymous.nativedepthestimation.NativeDepthEstimationPackage
+import com.anonymous.nativedetectiondepth.NativeDetectionDepthPackage
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
@@ -31,6 +32,7 @@ class MainApplication : Application(), ReactApplication {
         packages.add(NativeBooleanTestPackage());
         packages.add(NativeCoapClientPackage());
         packages.add(NativeDepthEstimationPackage());
+        packages.add(NativeDetectionDepthPackage());
         return packages
       }
 
