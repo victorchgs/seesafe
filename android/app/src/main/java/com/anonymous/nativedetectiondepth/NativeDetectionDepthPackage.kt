@@ -10,14 +10,14 @@ class NativeDetectionDepthPackage : TurboReactPackage() {
 
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
     if (name == NativeDetectionDepthModule.NAME) {
-      NativeObjectDepthModule(reactContext)
+      NativeDetectionDepthModule(reactContext)
     } else {
       null
     }
 
   override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
     mapOf(
-      NativeObjectDepthModule.NAME to ReactModuleInfo(
+      NativeDetectionDepthModule.NAME to ReactModuleInfo(
         _name = NativeDetectionDepthModule.NAME,
         _className = NativeDetectionDepthModule.NAME,
         _canOverrideExistingModule = false,
