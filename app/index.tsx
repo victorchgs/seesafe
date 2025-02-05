@@ -29,16 +29,26 @@ export default function Index() {
 
       // console.log(base64ImageString);
 
-      NativeDetectionDepth?.analyzeImage(base64ImageString.split("base64,")[1])
-        .then((resultJson) => {
-          console.log("Resultado da análise de imagem:", resultJson);
-          const detectedObjects = JSON.parse(resultJson);
-          console.log("Objetos detectados:", detectedObjects);
-          // Process the detected objects as needed
-        })
-        .catch((error) => {
-          console.error("Erro ao analisar a imagem:", error);
-        });
+      console.log("Breakpoint 1");
+
+      try {
+        NativeDetectionDepth?.analyzeImage(
+          base64ImageString.split("base64,")[1]
+        )
+          .then((resultJson) => {
+            console.log("Resultado da análise de imagem:", resultJson);
+            const detectedObjects = JSON.parse(resultJson);
+            console.log("Objetos detectados:", detectedObjects);
+            // Process the detected objects as needed
+          })
+          .catch((error) => {
+            console.error("Erro ao analisar a imagem:", error);
+          });
+      } catch (error) {
+        console.error("Erro crítico ao chamar analyzeImage:", error);
+      }
+
+      console.log("Breakpoint 2");
 
       // NativeDepthEstimation?.getDepthMap(base64ImageString.split("base64,")[1])
       //   .then((depthMapJson) => {

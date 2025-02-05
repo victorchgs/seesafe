@@ -159,6 +159,7 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation 'org.eclipse.californium:californium-core:3.13.0'
     implementation 'org.tensorflow:tensorflow-lite:2.8.0'
+    implementation 'org.tensorflow:tensorflow-lite-api:2.8.0'
 
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
