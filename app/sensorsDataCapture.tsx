@@ -1,6 +1,9 @@
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Center } from "@/components/ui/center";
+import { Heading } from "@/components/ui/heading";
+import { Text } from "@/components/ui/text";
 import NativeCoapClient from "@/specs/NativeCoapClient";
 import useDeviceStore from "@/stores/device";
 import { COAP_SERVER_URL } from "@env";
@@ -12,23 +15,18 @@ import {
   Gyroscope,
   GyroscopeMeasurement,
 } from "expo-sensors";
-import { useEffect, useRef, useState } from "react";
+import { Share } from "react-native";
+import { useEffect, useRef } from "react";
+import { VStack } from "@/components/ui/vstack";
+import { Pressable } from "@/components/ui/pressable";
+import { Icon, ShareIcon } from "@/components/ui/icon";
+import { HStack } from "@/components/ui/hstack";
 
 export default function SensorsDataCapture() {
-  const { deviceId } = useDeviceStore();
-  const [accelerometerData, setAccelerometerData] = useState<
-    AccelerometerMeasurement[]
-  >([]);
-  const [gyroscopeData, setGyroscopeData] = useState<GyroscopeMeasurement[]>(
-    []
-  );
-  const [locationData, setLocationData] =
-    useState<Location.LocationObject | null>(null);
+  const { deviceId, shareCode } = useDeviceStore();
   const tempAccelerometerData = useRef<AccelerometerMeasurement[]>([]);
   const tempGyroscopeData = useRef<GyroscopeMeasurement[]>([]);
-  const accelerometerDataRef = useRef(accelerometerData);
-  const gyroscopeDataRef = useRef(gyroscopeData);
-  const locationDataRef = useRef(locationData);
+  const locationDataRef = useRef<Location.LocationObject | null>(null);
   const captureInterval = 100;
   const sendInterval = 6000;
   const maxChunkSize = 700;
@@ -45,86 +43,26 @@ export default function SensorsDataCapture() {
   };
 
   useEffect(() => {
-    let accelerometerSubscription: any;
-    let gyroscopeSubscription: any;
-    let locationSubscription: any;
-
-    accelerometerDataRef.current = accelerometerData;
-    gyroscopeDataRef.current = gyroscopeData;
-    locationDataRef.current = locationData;
+    let accelerometerSubscription: { remove: () => void } | null = null;
+    let gyroscopeSubscription: { remove: () => void } | null = null;
+    let locationSubscription: { remove: () => void } | null = null;
 
     const startCapturing = async () => {
-      const { status: locationStatus } =
-        await Location.requestForegroundPermissionsAsync();
-      if (locationStatus !== "granted") {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
         console.warn("Localização não permitida");
         return;
       }
 
-      accelerometerSubscription = Accelerometer.addListener(
-        (data: AccelerometerMeasurement) => {
-          tempAccelerometerData.current.push(data);
-          if (
-            tempGyroscopeData.current.length > 0 &&
-            tempAccelerometerData.current.length >=
-              tempGyroscopeData.current.length
-          ) {
-            const matchingLength = tempGyroscopeData.current.length;
-            const accelerometerBatch = tempAccelerometerData.current.splice(
-              0,
-              matchingLength
-            );
-            const gyroscopeBatch = tempGyroscopeData.current.splice(
-              0,
-              matchingLength
-            );
-
-            accelerometerDataRef.current = [
-              ...accelerometerDataRef.current,
-              ...accelerometerBatch,
-            ];
-            gyroscopeDataRef.current = [
-              ...gyroscopeDataRef.current,
-              ...gyroscopeBatch,
-            ];
-            setAccelerometerData(accelerometerDataRef.current);
-            setGyroscopeData(gyroscopeDataRef.current);
-          }
-        }
-      );
+      accelerometerSubscription = Accelerometer.addListener((data) => {
+        tempAccelerometerData.current.push(data);
+      });
       Accelerometer.setUpdateInterval(captureInterval);
 
-      gyroscopeSubscription = Gyroscope.addListener(
-        (data: GyroscopeMeasurement) => {
-          tempGyroscopeData.current.push(data);
-          if (
-            tempAccelerometerData.current.length > 0 &&
-            tempGyroscopeData.current.length >=
-              tempAccelerometerData.current.length
-          ) {
-            const matchingLength = tempAccelerometerData.current.length;
-            const accelerometerBatch = tempAccelerometerData.current.splice(
-              0,
-              matchingLength
-            );
-            const gyroscopeBatch = tempGyroscopeData.current.splice(
-              0,
-              matchingLength
-            );
-
-            accelerometerDataRef.current = [
-              ...accelerometerDataRef.current,
-              ...accelerometerBatch,
-            ];
-            gyroscopeDataRef.current = [
-              ...gyroscopeDataRef.current,
-              ...gyroscopeBatch,
-            ];
-            setAccelerometerData(accelerometerDataRef.current);
-            setGyroscopeData(gyroscopeDataRef.current);
-          }
-        }
-      );
+      gyroscopeSubscription = Gyroscope.addListener((data) => {
+        tempGyroscopeData.current.push(data);
+      });
       Gyroscope.setUpdateInterval(captureInterval);
 
       locationSubscription = await Location.watchPositionAsync(
@@ -132,9 +70,8 @@ export default function SensorsDataCapture() {
           accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: captureInterval,
         },
-        (location: Location.LocationObject) => {
+        (location) => {
           locationDataRef.current = location;
-          setLocationData(location);
         }
       );
     };
@@ -144,53 +81,74 @@ export default function SensorsDataCapture() {
     const sendDataInterval = setInterval(() => {
       const payload = JSON.stringify({
         deviceId,
-        accelerometerData: accelerometerDataRef.current,
-        gyroscopeData: gyroscopeDataRef.current,
+        accelerometerData: tempAccelerometerData.current,
+        gyroscopeData: tempGyroscopeData.current,
         locationData: locationDataRef.current,
       });
 
       const payloadChunks = chunkPayload(payload, maxChunkSize);
 
       payloadChunks.forEach((chunk, index) => {
-        const chunkPayload = JSON.stringify({
-          index,
-          totalChunks: payloadChunks.length,
-          chunk,
-          deviceId,
-        });
-
         NativeCoapClient?.sendCoapRequest(
           "POST",
-          `${COAP_SERVER_URL}/sensorsDataCapture`,
-          chunkPayload
+          `${COAP_SERVER_URL}/sensorsData`,
+          JSON.stringify({
+            index,
+            totalChunks: payloadChunks.length,
+            chunk,
+            deviceId,
+          })
         );
       });
 
-      setAccelerometerData([]);
-      setGyroscopeData([]);
-      accelerometerDataRef.current = [];
-      gyroscopeDataRef.current = [];
+      tempAccelerometerData.current = [];
+      tempGyroscopeData.current = [];
     }, sendInterval);
 
     return () => {
-      accelerometerSubscription && accelerometerSubscription.remove();
-      gyroscopeSubscription && gyroscopeSubscription.remove();
-      locationSubscription && locationSubscription.remove();
+      accelerometerSubscription?.remove();
+      gyroscopeSubscription?.remove();
+      locationSubscription?.remove();
       clearInterval(sendDataInterval);
     };
   }, []);
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${shareCode}`,
+      });
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
+    }
+  };
+
   return (
     <Box className="h-full bg-white dark:bg-slate-900">
       <Center className="h-full">
-        <Button
-          onPress={() => {
-            router.back();
-          }}
-          className="h-auto py-5 px-7 rounded-2xl"
-        >
-          <ButtonText className="text-2xl">Voltar</ButtonText>
-        </Button>
+        <VStack space="lg">
+          <Button
+            onPress={() => router.back()}
+            className="h-auto py-5 px-7 mx-auto rounded-2xl"
+          >
+            <ButtonText className="text-2xl">Voltar</ButtonText>
+          </Button>
+          <Card>
+            <VStack space="2xl">
+              <VStack space="md">
+                <Heading size="lg">
+                  Este é o seu código de compartilhamento
+                </Heading>
+                <Pressable onPress={handleShare}>
+                  <HStack space="lg" className="justify-center">
+                    <Text size="lg">{shareCode}</Text>
+                    <Icon as={ShareIcon} size="lg" />
+                  </HStack>
+                </Pressable>
+              </VStack>
+            </VStack>
+          </Card>
+        </VStack>
       </Center>
     </Box>
   );

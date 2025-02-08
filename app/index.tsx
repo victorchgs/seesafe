@@ -7,10 +7,10 @@ import useDeviceStore from "@/stores/device";
 import { router } from "expo-router";
 
 export default function Index() {
-  const { deviceId, setDeviceId } = useDeviceStore();
+  const { deviceId, setDeviceId, shareCode, setShareCode } = useDeviceStore();
 
   const handleLowVisionFlux = () => {
-    const payload = JSON.stringify({ deviceId });
+    const payload = JSON.stringify({ deviceId, shareCode });
 
     NativeCoapClient?.sendCoapRequest(
       "POST",
@@ -19,10 +19,11 @@ export default function Index() {
     )
       .then((response) => {
         const parsedResponse = JSON.parse(response);
-        const parsedData = JSON.parse(parsedResponse.body.data);
+        const data = parsedResponse.body.data;
 
-        if (parsedData.deviceId) {
-          setDeviceId(parsedData.deviceId);
+        if (data?.deviceId) {
+          setDeviceId(data.deviceId);
+          setShareCode(data.shareCode);
           router.push("/sensorsDataCapture");
         } else {
           throw new Error("Acesso negado?");
