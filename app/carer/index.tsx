@@ -1,114 +1,116 @@
 import { Box } from "@/components/ui/box";
-import {
-  Button,
-  ButtonGroup,
-  ButtonIcon,
-  ButtonText,
-} from "@/components/ui/button";
+import { Button, ButtonText } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Center } from "@/components/ui/center";
 import {
   FormControl,
   FormControlError,
   FormControlErrorIcon,
   FormControlErrorText,
-  FormControlHelper,
-  FormControlHelperText,
   FormControlLabel,
   FormControlLabelText,
 } from "@/components/ui/form-control";
 import { Heading } from "@/components/ui/heading";
-import {
-  AlertCircleIcon,
-  ArrowLeftIcon,
-  EyeIcon,
-  EyeOffIcon,
-} from "@/components/ui/icon";
-import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
+import { AlertCircleIcon, ArrowLeftIcon, Icon } from "@/components/ui/icon";
+import { Input, InputField } from "@/components/ui/input";
+import { Pressable } from "@/components/ui/pressable";
+import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import NativeCoapClient from "@/specs/NativeCoapClient";
+import { COAP_SERVER_URL } from "@env";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text } from "react-native";
 
 export default function Index() {
+  const [code, setCode] = useState("");
   const [isInvalid, setIsInvalid] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleSubmit = () => {
-    if (inputValue.length < 6) {
+    if (!code.trim()) {
       setIsInvalid(true);
-    } else {
+      setErrorMessage("Insira algum código.");
+
+      return;
+    }
+
+    const payload = JSON.stringify({ code });
+
+    NativeCoapClient?.sendRequest(
+      "POST",
+      `${COAP_SERVER_URL}/shareCodeValidation`,
+      true,
+      payload
+    )
+      .then((response) => {
+        const parsedResponse = JSON.parse(response);
+        const data = parsedResponse.body.data;
+
+        if (data?.deviceId) {
+          router.push({
+            pathname: "/carer/infosView",
+            params: { deviceId: data.deviceId },
+          });
+          setCode("");
+        } else {
+          setIsInvalid(true);
+          setErrorMessage("Código inválido. Por favor, tente novamente.");
+        }
+      })
+      .catch((error) => {
+        console.log("Erro ao enviar requisição CoAP:", error);
+      });
+  };
+
+  const handleInputChange = (text: string) => {
+    setCode(text);
+
+    if (isInvalid) {
       setIsInvalid(false);
+      setErrorMessage("");
     }
   };
 
-  const [showPassword, setShowPassword] = useState(false);
-  const handleState = () => {
-    setShowPassword((showState) => {
-      return !showState;
-    });
-  };
-
   return (
-    <Box className="h-full bg-white dark:bg-slate-900">
+    <Box className="bg-white dark:bg-slate-900">
       <Center className="h-full">
-        <VStack space="2xl" className="w-2/3">
-          <Heading className="text-4xl">Acesse sua conta</Heading>
-          <FormControl
-            isInvalid={isInvalid}
-            isDisabled={false}
-            isReadOnly={false}
-            isRequired={false}
-          >
+        <Card variant="elevated" className="max-w-[80%]">
+          <VStack space="2xl">
             <VStack space="sm">
-              <FormControlLabel>
-                <FormControlLabelText className="text-2xl">
-                  E-mail
-                </FormControlLabelText>
-              </FormControlLabel>
-              <Input className="h-auto">
-                <InputField
-                  type="text"
-                  placeholder="Email"
-                  value={inputValue}
-                  onChangeText={(text) => setInputValue(text)}
-                />
-              </Input>
-              <FormControlError>
-                <FormControlErrorIcon as={AlertCircleIcon} />
-                <FormControlErrorText>Campo obrigatório</FormControlErrorText>
-              </FormControlError>
+              <Pressable onPress={() => router.back()}>
+                <Icon as={ArrowLeftIcon} size="lg" />
+              </Pressable>
+              <Heading size="lg">Informe o código para continuar</Heading>
+              <Text size="lg">
+                Este é o código disponível no aplicativo da PCDV
+              </Text>
             </VStack>
-          </FormControl>
-          <FormControl
-            isInvalid={isInvalid}
-            isDisabled={false}
-            isReadOnly={false}
-            isRequired={false}
-          >
-            <VStack space="sm">
-              <FormControlLabel>
-                <FormControlLabelText className="text-2xl">
-                  Senha
-                </FormControlLabelText>
-              </FormControlLabel>
-              <Input className="h-auto">
-                <InputField type="password" placeholder="Senha" />
-              </Input>
-              <FormControlError>
-                <FormControlErrorIcon as={AlertCircleIcon} />
-                <FormControlErrorText>Campo obrigatório</FormControlErrorText>
-              </FormControlError>
+            <VStack space="xl">
+              <FormControl isInvalid={isInvalid} size="md">
+                <FormControlLabel>
+                  <FormControlLabelText>Código</FormControlLabelText>
+                </FormControlLabel>
+                <Input className="my-1" size="lg">
+                  <InputField
+                    type="text"
+                    placeholder="seesafe/exemplo"
+                    value={code}
+                    onChangeText={handleInputChange}
+                  />
+                </Input>
+                {isInvalid && (
+                  <FormControlError>
+                    <FormControlErrorIcon as={AlertCircleIcon} />
+                    <FormControlErrorText>{errorMessage}</FormControlErrorText>
+                  </FormControlError>
+                )}
+              </FormControl>
+              <Button onPress={handleSubmit}>
+                <ButtonText>Confirmar</ButtonText>
+              </Button>
             </VStack>
-          </FormControl>
-          <Button variant="link" className="self-end">
-            <ButtonText>Esqueceu sua senha?</ButtonText>
-          </Button>
-          <Button onPress={handleSubmit}>
-            <ButtonText>Entrar</ButtonText>
-          </Button>
-          <Button variant="link">
-            <ButtonText>Não possui uma conta? Faça o cadastro</ButtonText>
-          </Button>
-        </VStack>
+          </VStack>
+        </Card>
       </Center>
     </Box>
   );

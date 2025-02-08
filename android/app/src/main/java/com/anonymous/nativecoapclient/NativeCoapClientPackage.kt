@@ -18,10 +18,11 @@ class NativeCoapClientPackage : TurboReactPackage() {
   override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
     mapOf(
       NativeCoapClientModule.NAME to ReactModuleInfo(
-        _name = NativeCoapClientModule.NAME,
-        _className = NativeCoapClientModule::class.java.name,
-        _canOverrideExistingModule = false,
-        _needsEagerInit = false,
+        name = NativeCoapClientModule.NAME,
+        className = NativeCoapClientModule::class.java.name,
+        canOverrideExistingModule = false,
+        needsEagerInit = false,
+        hasConstants = true,
         isCxxModule = false,
         isTurboModule = true
       )
