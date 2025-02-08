@@ -3,8 +3,6 @@ import { Box } from "@/components/ui/box";
 import { Button, ButtonGroup, ButtonText } from "@/components/ui/button";
 import { Center } from "@/components/ui/center";
 import NativeCoapClient from "@/specs/NativeCoapClient";
-import NativeDepthEstimation from "@/specs/NativeDepthEstimation";
-import NativeDetectionDepth from "@/specs/NativeDetectionDepth";
 import useDeviceStore from "@/stores/device";
 import { router } from "expo-router";
 
@@ -40,7 +38,6 @@ export default function Index() {
   return (
     <Box className="h-full bg-white dark:bg-slate-900">
       <Center className="h-full">
-        {hasPermission?.granted && <CameraView ref={cameraRef} />}
         <ButtonGroup space="4xl">
           <Button
             onPress={() => {
