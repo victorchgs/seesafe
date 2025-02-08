@@ -89,9 +89,10 @@ export default function SensorsDataCapture() {
       const payloadChunks = chunkPayload(payload, maxChunkSize);
 
       payloadChunks.forEach((chunk, index) => {
-        NativeCoapClient?.sendCoapRequest(
+        NativeCoapClient?.sendRequest(
           "POST",
           `${COAP_SERVER_URL}/sensorsData`,
+          false,
           JSON.stringify({
             index,
             totalChunks: payloadChunks.length,

@@ -36,9 +36,10 @@ export default function Index() {
 
     const payload = JSON.stringify({ code });
 
-    NativeCoapClient?.sendCoapRequest(
+    NativeCoapClient?.sendRequest(
       "POST",
       `${COAP_SERVER_URL}/shareCodeValidation`,
+      true,
       payload
     )
       .then((response) => {
