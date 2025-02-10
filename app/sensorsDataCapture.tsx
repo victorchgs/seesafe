@@ -88,19 +88,23 @@ export default function SensorsDataCapture() {
 
       const payloadChunks = chunkPayload(payload, maxChunkSize);
 
-      payloadChunks.forEach((chunk, index) => {
-        NativeCoapClient?.sendRequest(
-          "POST",
-          `${COAP_SERVER_URL}/sensorsData`,
-          false,
-          JSON.stringify({
-            index,
-            totalChunks: payloadChunks.length,
-            chunk,
-            deviceId,
-          })
-        );
-      });
+      if (NativeCoapClient) {
+        payloadChunks.forEach((chunk, index) => {
+          NativeCoapClient?.sendRequest(
+            "POST",
+            `${COAP_SERVER_URL}/sensorsData`,
+            false,
+            JSON.stringify({
+              index,
+              totalChunks: payloadChunks.length,
+              chunk,
+              deviceId,
+            })
+          );
+        });
+      } else {
+        console.log("NativeCoapClient não está disponível");
+      }
 
       tempAccelerometerData.current = [];
       tempGyroscopeData.current = [];
