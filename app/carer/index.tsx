@@ -17,7 +17,6 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import NativeCoapClient from "@/specs/NativeCoapClient";
-import { COAP_SERVER_URL } from "@env";
 import { router } from "expo-router";
 import { useState } from "react";
 
@@ -39,7 +38,7 @@ export default function Index() {
     if (NativeCoapClient) {
       NativeCoapClient?.sendRequest(
         "POST",
-        `${COAP_SERVER_URL}/shareCodeValidation`,
+        "192.168.0.194:5683/shareCodeValidation",
         true,
         payload
       )

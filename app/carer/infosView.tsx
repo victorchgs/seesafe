@@ -1,6 +1,5 @@
 import { Box } from "@/components/ui/box";
 import NativeCoapClient from "@/specs/NativeCoapClient";
-import { COAP_SERVER_URL } from "@env";
 import { useLocalSearchParams } from "expo-router";
 import MapView, { Marker } from "react-native-maps";
 import { useEffect, useState } from "react";
@@ -17,7 +16,7 @@ export default function InfosView() {
     if (NativeCoapClient) {
       NativeCoapClient.sendRequest(
         "GET",
-        `${COAP_SERVER_URL}/sensorsData?deviceId=${deviceId}`,
+        `192.168.0.194:5683/sensorsData?deviceId=${deviceId}`,
         true,
         undefined
       )

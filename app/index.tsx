@@ -10,12 +10,11 @@ export default function Index() {
 
   const handleLowVisionFlux = () => {
     const payload = JSON.stringify({ deviceId, shareCode });
-    const serverUrl = process.env.EXPO_PUBLIC_COAP_SERVER_URL;
 
     if (NativeCoapClient) {
       NativeCoapClient?.sendRequest(
         "POST",
-        `${serverUrl}/deviceAuth`,
+        "192.168.0.194:5683/deviceAuth",
         true,
         payload
       )
