@@ -1,6 +1,5 @@
 import { Box } from "@/components/ui/box";
 import NativeCoapClient from "@/specs/NativeCoapClient";
-import { COAP_SERVER_URL } from "@env";
 import { useLocalSearchParams } from "expo-router";
 import MapView, { Marker } from "react-native-maps";
 import { useEffect, useState } from "react";
@@ -14,30 +13,36 @@ export default function InfosView() {
   const [didFall, setDidFall] = useState(false);
 
   const fetchData = () => {
-    NativeCoapClient.sendRequest(
-      "GET",
-      `${COAP_SERVER_URL}/sensorsData?deviceId=${deviceId}`,
-      true,
-      undefined
-    )
-      .then((response) => {
-        const parsedResponse = JSON.parse(response);
-        const locationData = parsedResponse.body.data.locationData;
+    if (NativeCoapClient) {
+      NativeCoapClient.sendRequest(
+        "GET",
+        `192.168.0.194:5683/sensorsData?deviceId=${deviceId}`,
+        true,
+        undefined
+      )
+        .then((response) => {
+          const parsedResponse = JSON.parse(response);
+          const locationData = parsedResponse.body.data.locationData;
 
-        if (locationData && locationData.coords) {
-          const { latitude, longitude } = locationData.coords;
-          setLocation({ latitude, longitude });
-          setDidFall(parsedResponse.body.data.didFall);
-        }
-      })
-      .catch((error) => {
-        console.log("Erro ao buscar dados do dispositivo:", error);
-      });
+          if (locationData && locationData.coords) {
+            const { latitude, longitude } = locationData.coords;
+            setLocation({ latitude, longitude });
+            setDidFall(parsedResponse.body.data.didFall);
+
+            console.log(parsedResponse.body.data.didFall);
+          }
+        })
+        .catch((error) => {
+          console.log("Erro ao buscar dados do dispositivo:", error);
+        });
+    } else {
+      console.log("NativeCoapClient não está disponível");
+    }
   };
 
   useEffect(() => {
     fetchData();
-    const fetchDataInterval = setInterval(fetchData, 5000);
+    const fetchDataInterval = setInterval(fetchData, 2000);
 
     return () => clearInterval(fetchDataInterval);
   }, []);

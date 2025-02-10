@@ -17,7 +17,6 @@ import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import NativeCoapClient from "@/specs/NativeCoapClient";
-import { COAP_SERVER_URL } from "@env";
 import { router } from "expo-router";
 import { useState } from "react";
 
@@ -36,30 +35,34 @@ export default function Index() {
 
     const payload = JSON.stringify({ code });
 
-    NativeCoapClient?.sendRequest(
-      "POST",
-      `${COAP_SERVER_URL}/shareCodeValidation`,
-      true,
-      payload
-    )
-      .then((response) => {
-        const parsedResponse = JSON.parse(response);
-        const data = parsedResponse.body.data;
+    if (NativeCoapClient) {
+      NativeCoapClient?.sendRequest(
+        "POST",
+        "192.168.0.194:5683/shareCodeValidation",
+        true,
+        payload
+      )
+        .then((response) => {
+          const parsedResponse = JSON.parse(response);
+          const data = parsedResponse.body.data;
 
-        if (data?.deviceId) {
-          router.push({
-            pathname: "/carer/infosView",
-            params: { deviceId: data.deviceId },
-          });
-          setCode("");
-        } else {
-          setIsInvalid(true);
-          setErrorMessage("Código inválido. Por favor, tente novamente.");
-        }
-      })
-      .catch((error) => {
-        console.log("Erro ao enviar requisição CoAP:", error);
-      });
+          if (data?.deviceId) {
+            router.push({
+              pathname: "/carer/infosView",
+              params: { deviceId: data.deviceId },
+            });
+            setCode("");
+          } else {
+            setIsInvalid(true);
+            setErrorMessage("Código inválido. Por favor, tente novamente.");
+          }
+        })
+        .catch((error) => {
+          console.log("Erro ao enviar requisição CoAP:", error);
+        });
+    } else {
+      console.log("NativeCoapClient não está disponível");
+    }
   };
 
   const handleInputChange = (text: string) => {

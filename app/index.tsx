@@ -1,4 +1,3 @@
-import { COAP_SERVER_URL } from "@env";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonGroup, ButtonText } from "@/components/ui/button";
 import { Center } from "@/components/ui/center";
@@ -12,27 +11,31 @@ export default function Index() {
   const handleLowVisionFlux = () => {
     const payload = JSON.stringify({ deviceId, shareCode });
 
-    NativeCoapClient?.sendRequest(
-      "POST",
-      `${COAP_SERVER_URL}/deviceAuth`,
-      true,
-      payload
-    )
-      .then((response) => {
-        const parsedResponse = JSON.parse(response);
-        const data = parsedResponse.body.data;
+    if (NativeCoapClient) {
+      NativeCoapClient?.sendRequest(
+        "POST",
+        "192.168.0.194:5683/deviceAuth",
+        true,
+        payload
+      )
+        .then((response) => {
+          const parsedResponse = JSON.parse(response);
+          const data = parsedResponse.body.data;
 
-        if (data?.deviceId) {
-          setDeviceId(data.deviceId);
-          setShareCode(data.shareCode);
-          router.push("/sensorsDataCapture");
-        } else {
-          throw new Error("Acesso negado?");
-        }
-      })
-      .catch((error) => {
-        console.error("Erro ao enviar requisição CoAP:", error);
-      });
+          if (data?.deviceId) {
+            setDeviceId(data.deviceId);
+            setShareCode(data.shareCode);
+            router.push("/sensorsDataCapture");
+          } else {
+            throw new Error("Acesso negado?");
+          }
+        })
+        .catch((error) => {
+          console.error("Erro ao enviar requisição CoAP:", error);
+        });
+    } else {
+      console.log("NativeCoapClient não está disponível");
+    }
   };
 
   return (

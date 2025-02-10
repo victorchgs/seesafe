@@ -6,7 +6,6 @@ import { Heading } from "@/components/ui/heading";
 import { Text } from "@/components/ui/text";
 import NativeCoapClient from "@/specs/NativeCoapClient";
 import useDeviceStore from "@/stores/device";
-import { COAP_SERVER_URL } from "@env";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import {
@@ -88,19 +87,23 @@ export default function SensorsDataCapture() {
 
       const payloadChunks = chunkPayload(payload, maxChunkSize);
 
-      payloadChunks.forEach((chunk, index) => {
-        NativeCoapClient?.sendRequest(
-          "POST",
-          `${COAP_SERVER_URL}/sensorsData`,
-          false,
-          JSON.stringify({
-            index,
-            totalChunks: payloadChunks.length,
-            chunk,
-            deviceId,
-          })
-        );
-      });
+      if (NativeCoapClient) {
+        payloadChunks.forEach((chunk, index) => {
+          NativeCoapClient?.sendRequest(
+            "POST",
+            "192.168.0.194:5683/sensorsData",
+            false,
+            JSON.stringify({
+              index,
+              totalChunks: payloadChunks.length,
+              chunk,
+              deviceId,
+            })
+          );
+        });
+      } else {
+        console.log("NativeCoapClient não está disponível");
+      }
 
       tempAccelerometerData.current = [];
       tempGyroscopeData.current = [];
