@@ -6,6 +6,7 @@ import NativeCameraX from "@/specs/NativeCameraX";
 import NativeDepthEstimation from "@/specs/NativeDepthEstimation";
 import useDeviceStore from "@/stores/device";
 import { router } from "expo-router";
+import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 
 export default function Index() {
   const { deviceId, setDeviceId, shareCode, setShareCode } = useDeviceStore();
@@ -44,6 +45,13 @@ export default function Index() {
     try {
       if (!NativeCameraX || !NativeDepthEstimation) {
         console.error("Módulos nativos não disponíveis");
+        return;
+      }
+
+      const permissionStatus = await request(PERMISSIONS.ANDROID.CAMERA);
+
+      if (permissionStatus !== RESULTS.GRANTED) {
+        console.error("Permissão de câmera negada");
         return;
       }
 

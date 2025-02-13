@@ -18,17 +18,31 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.core.CameraSelector
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-
+import androidx.core.app.ActivityCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import android.app.Activity
 
 class NativeCameraXModule(reactContext: ReactApplicationContext) : NativeCameraXSpec(reactContext) {
 
     companion object {
         const val NAME = "NativeCameraX"
+        const val REQUEST_CAMERA_PERMISSION = 1001
     }
 
     override fun getName() = NAME
 
     override fun captureImage(promise: Promise) {
+        if (ContextCompat.checkSelfPermission(reactApplicationContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                reactApplicationContext.currentActivity as Activity,
+                arrayOf(Manifest.permission.CAMERA),
+                REQUEST_CAMERA_PERMISSION
+            )
+            promise.reject("ERROR", "Permissão de câmera necessária")
+            return
+        }
+
         try {
             val cameraProviderFuture = ProcessCameraProvider.getInstance(reactApplicationContext)
 
@@ -60,7 +74,6 @@ class NativeCameraXModule(reactContext: ReactApplicationContext) : NativeCameraX
             promise.reject("ERROR", e.message)
         }
     }
-
 
     private fun imageToBase64(image: ImageProxy): String? {
         return try {
