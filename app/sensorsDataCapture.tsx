@@ -94,7 +94,7 @@ export default function SensorsDataCapture() {
         payloadChunks.forEach((chunk, index) => {
           NativeCoapClient?.sendRequest(
             "POST",
-            "192.168.0.194:5683/sensorsData",
+            "192.168.1.3:5683/sensorsData",
             false,
             JSON.stringify({
               index,
