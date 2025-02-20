@@ -44,7 +44,7 @@ export default function InfosView() {
     if (NativeCoapClient) {
       NativeCoapClient?.sendRequest(
         "GET",
-        `192.168.1.3:5683/sensorsData?deviceId=${deviceId}`,
+        `192.168.1.2:5683/sensorsData?deviceId=${deviceId}`,
         true,
         undefined
       )
