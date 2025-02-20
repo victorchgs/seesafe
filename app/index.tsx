@@ -15,6 +15,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon, CloseIcon } from "@/components/ui/icon";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "react-native";
+import NativeDetectionDepth from "@/specs/NativeDetectionDepth";
 
 export default function Index() {
   const [warningMessage, setWarningMessage] = useState("");
@@ -51,6 +52,8 @@ export default function Index() {
     }
   };
 
+  /* handleCaptureAndProcess original*/
+
   // const handleCaptureAndProcess = async () => {
   //   try {
   //     if (!NativeCameraX || !NativeDepthEstimation) {
@@ -76,6 +79,8 @@ export default function Index() {
   //   }
   // };
 
+  /* MODELO MIDAS*/
+
   const handleCaptureAndProcess = async () => {
     try {
       if (!NativeCameraX || !NativeDepthEstimation) {
@@ -97,32 +102,21 @@ export default function Index() {
       const depthMap = JSON.parse(depthMapJson);
 
       // Encontrar o valor máximo na matriz de profundidade
-      let maxDepthValue = -Infinity;
-      for (let row of depthMap) {
-        for (let value of row) {
-          if (value > maxDepthValue) {
-            maxDepthValue = value;
-          }
-        }
-      }
+      const maxDepthValue = Math.max(...depthMap.flat());
 
-      // Define os limites da região central
+      // Definir a região central da imagem
       const startX = 64;
       const endX = 194;
       const startY = 0;
       const endY = 190;
+      const centralDepthMap = depthMap
+        .slice(startY, endY)
+        .map((row) => row.slice(startX, endX));
 
-      let nearbyDetected = false;
-
-      for (let y = startY; y < endY; y++) {
-        for (let x = startX; x < endX; x++) {
-          if (depthMap[y][x] > 0.6 * maxDepthValue) {
-            nearbyDetected = true;
-            break;
-          }
-        }
-        if (nearbyDetected) break;
-      }
+      const proximityThreshold = 0.7 * maxDepthValue;
+      const nearbyDetected = centralDepthMap
+        .flat()
+        .some((value) => value > proximityThreshold);
 
       console.log("Objetos próximos detectados:", nearbyDetected);
 
@@ -130,19 +124,56 @@ export default function Index() {
       if (nearbyDetected) {
         setWarningMessage("Atenção! Objeto próximo detectado!");
       } else {
-        setWarningMessage("Não há objetos próximos detectados.");
+        setWarningMessage("Não há objetos próximos detectados."); // Aviso quando não há risco
       }
-
-      // Libera memória manualmente
-      depthMap.length = 0;
-      global.gc?.();
-
-      // Delay para evitar sobrecarga
-      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error("Erro ao capturar/processar imagem:", error);
     }
   };
+
+  /* MODELO YOLO COM MIDAS*/ // Não funciona
+
+  // const handleCaptureAndProcess = async () => {
+  //   try {
+  //     if (!NativeCameraX || !NativeDetectionDepth) {
+  //       console.error("Módulos nativos não disponíveis");
+  //       return;
+  //     }
+
+  //     const permissionStatus = await request(PERMISSIONS.ANDROID.CAMERA);
+  //     if (permissionStatus !== RESULTS.GRANTED) {
+  //       console.error("Permissão de câmera negada");
+  //       return;
+  //     }
+
+  //     console.log("Capturando imagem...");
+  //     const base64Image = await NativeCameraX.captureImage();
+  //     console.log("Imagem capturada, processando...");
+
+  //     try {
+  //       const resultJson = await NativeDetectionDepth.analyzeImage(base64Image);
+  //       console.log("Resultado da análise de imagem:", resultJson);
+
+  //       const detectedObjects = JSON.parse(resultJson);
+  //       console.log("Objetos detectados:", detectedObjects);
+
+  //       if (detectedObjects.length > 0) {
+  //         const detectedObjectNames = detectedObjects
+  //           .map((obj) => obj.name)
+  //           .join(", ");
+  //         setWarningMessage(
+  //           `Atenção! Objetos detectados: ${detectedObjectNames}`
+  //         );
+  //       } else {
+  //         setWarningMessage("Não há objetos detectados.");
+  //       }
+  //     } catch (error) {
+  //       console.error("Erro ao analisar a imagem:", error);
+  //     }
+  //   } catch (error) {
+  //     console.error("Erro crítico ao chamar analyzeImage:", error);
+  //   }
+  // };
 
   function ProximityAlert({
     message,

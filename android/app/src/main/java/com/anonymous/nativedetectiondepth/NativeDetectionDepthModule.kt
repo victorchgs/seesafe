@@ -14,6 +14,8 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel
+import com.google.gson.Gson
+
 
 class NativeDetectionDepthModule(reactContext: ReactApplicationContext) :
     NativeDetectionDepthSpec(reactContext) {
@@ -105,7 +107,7 @@ class NativeDetectionDepthModule(reactContext: ReactApplicationContext) :
 
     private fun processResults(yoloOutput: Array<FloatArray>, midasOutput: Array<FloatArray>, imgWidth: Int, imgHeight: Int): String {
         val detectedObjects = mutableListOf<Map<String, Any>>()
-        val CONFIDENCE_THRESHOLD = 0.5
+        val CONFIDENCE_THRESHOLD = 0.3
         val OBSTACLE_THRESHOLD = 200.0
 
         for (i in yoloOutput.indices) {
@@ -122,10 +124,9 @@ class NativeDetectionDepthModule(reactContext: ReactApplicationContext) :
                 val x2 = ((xCenter + w / 2) * imgWidth).toInt()
                 val y2 = ((yCenter + h / 2) * imgHeight).toInt()
 
-                val depthMapWidth = 256 // Since MiDaS output is 256x256
+                val depthMapWidth = 256
                 val depthMapHeight = 256
 
-                // Mapping the bounding box to the depth map coordinates
                 val depthX1 = (x1 * depthMapWidth / imgWidth).coerceIn(0, depthMapWidth - 1)
                 val depthY1 = (y1 * depthMapHeight / imgHeight).coerceIn(0, depthMapHeight - 1)
                 val depthX2 = (x2 * depthMapWidth / imgWidth).coerceIn(0, depthMapWidth - 1)
@@ -155,8 +156,10 @@ class NativeDetectionDepthModule(reactContext: ReactApplicationContext) :
                 }
             }
         }
-        return detectedObjects.toString()
+        // Retornar a string JSON corretamente formatada
+        return Gson().toJson(detectedObjects)
     }
+
 
     private fun loadCocoNames(context: Context): List<String> {
         return try {
