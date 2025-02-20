@@ -15,11 +15,13 @@ import {
   GyroscopeMeasurement,
 } from "expo-sensors";
 import { Share } from "react-native";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon, ShareIcon } from "@/components/ui/icon";
 import { HStack } from "@/components/ui/hstack";
+import NativeCameraX from "@/specs/NativeCameraX";
+import NativeDepthEstimation from "@/specs/NativeDepthEstimation";
 
 export default function SensorsDataCapture() {
   const { deviceId, shareCode } = useDeviceStore();
@@ -29,6 +31,7 @@ export default function SensorsDataCapture() {
   const captureInterval = 100;
   const sendInterval = 6000;
   const maxChunkSize = 700;
+  const [warningMessage, setWarningMessage] = useState("");
 
   const chunkPayload = (payload: string, size: number) => {
     const numChunks = Math.ceil(payload.length / size);
@@ -127,6 +130,53 @@ export default function SensorsDataCapture() {
     }
   };
 
+  useEffect(() => {
+    let isProcessing = false;
+
+    const captureAndProcess = async () => {
+      if (isProcessing) return;
+      isProcessing = true;
+      try {
+        console.log("Capturando imagem...");
+        const base64Image = await NativeCameraX.captureImage();
+        console.log("Imagem capturada, processando...");
+        const depthMapJson = await NativeDepthEstimation.getDepthMap(
+          base64Image
+        );
+
+        const depthMap = JSON.parse(depthMapJson);
+        console.log("Depth Map (Parsed):", depthMap);
+
+        const maxDepthValue = Math.max(...depthMap.flat());
+        const centralDepthMap = depthMap
+          .slice(0, 190)
+          .map((row) => row.slice(64, 194));
+        const proximityThreshold = 0.7 * maxDepthValue;
+        const nearbyDetected = centralDepthMap
+          .flat()
+          .some((value) => value > proximityThreshold);
+
+        console.log(nearbyDetected);
+
+        setWarningMessage(
+          nearbyDetected
+            ? "Atenção! Objeto próximo detectado!"
+            : "Não há objetos próximos detectados."
+        );
+      } catch (error) {
+        console.error("Erro ao capturar/processar imagem:", error);
+      }
+      isProcessing = false;
+      setTimeout(captureAndProcess, captureInterval); // Chama de novo após concluir
+    };
+
+    captureAndProcess(); // Inicia a primeira chamada
+
+    return () => {
+      isProcessing = true;
+    }; // Cancela se desmontar
+  }, []);
+
   return (
     <Box className="h-full bg-white dark:bg-slate-900">
       <Center className="h-full">
@@ -150,6 +200,14 @@ export default function SensorsDataCapture() {
                   </HStack>
                 </Pressable>
               </VStack>
+            </VStack>
+          </Card>
+        </VStack>
+        <VStack space="lg">
+          <Card>
+            <VStack space="2xl">
+              <Heading size="lg">Monitoramento de Profundidade</Heading>
+              <Text>{warningMessage}</Text>
             </VStack>
           </Card>
         </VStack>
