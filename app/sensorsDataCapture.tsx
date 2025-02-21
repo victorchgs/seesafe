@@ -23,6 +23,7 @@ import {
 import { Share } from "react-native";
 import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 import { useEffect, useRef, useState } from "react";
+import * as Speech from "expo-speech";
 
 export default function SensorsDataCapture() {
   const { deviceId, shareCode } = useDeviceStore();
@@ -33,6 +34,7 @@ export default function SensorsDataCapture() {
   const sendInterval = 6000;
   const maxChunkSize = 700;
   const [warningMessage, setWarningMessage] = useState("");
+  const prevWarningMessage = useRef("");
 
   const chunkPayload = (payload: string, size: number) => {
     const numChunks = Math.ceil(payload.length / size);
@@ -95,7 +97,7 @@ export default function SensorsDataCapture() {
         payloadChunks.forEach((chunk, index) => {
           NativeCoapClient?.sendRequest(
             "POST",
-            "192.168.1.2:5683/sensorsData",
+            "192.168.0.194:5683/sensorsData",
             false,
             JSON.stringify({
               index,
@@ -129,6 +131,14 @@ export default function SensorsDataCapture() {
     } catch (error) {
       console.error("Erro ao compartilhar:", error);
     }
+  };
+
+  const speakWarning = (message: any) => {
+    Speech.speak(message, {
+      language: "pt-BR", // Ajuste o idioma conforme necessário
+      pitch: 1.0, // Tom da voz
+      rate: 1.0, // Velocidade da fala
+    });
   };
 
   useEffect(() => {
@@ -182,11 +192,11 @@ export default function SensorsDataCapture() {
 
           console.log(nearbyDetected);
 
-          setWarningMessage(
-            nearbyDetected
-              ? "Atenção! Objeto próximo detectado!"
-              : "Não há objetos próximos detectados."
-          );
+          const newMessage = nearbyDetected
+            ? "Atenção! Objeto próximo detectado!"
+            : "Não há objetos próximos.";
+
+          setWarningMessage(newMessage);
         } else {
           console.log("NativeCameraX não está disponível");
         }
@@ -197,12 +207,19 @@ export default function SensorsDataCapture() {
       setTimeout(captureAndProcess, captureInterval); // Chama de novo após concluir
     };
 
-    captureAndProcess(); // Inicia a primeira chamada
+    captureAndProcess();
 
     return () => {
       isProcessing = true;
     }; // Cancela se desmontar
   }, []);
+
+  useEffect(() => {
+    if (warningMessage && warningMessage !== prevWarningMessage.current) {
+      speakWarning(warningMessage);
+      prevWarningMessage.current = warningMessage;
+    }
+  }, [warningMessage]);
 
   return (
     <Box className="h-full bg-white dark:bg-slate-900">

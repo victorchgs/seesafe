@@ -38,7 +38,7 @@ export default function Index() {
     if (NativeCoapClient) {
       NativeCoapClient?.sendRequest(
         "POST",
-        "192.168.1.2:5683/shareCodeValidation",
+        "192.168.0.194:5683/shareCodeValidation",
         true,
         payload
       )
