@@ -20,10 +20,10 @@ import {
   Gyroscope,
   GyroscopeMeasurement,
 } from "expo-sensors";
+import * as Speech from "expo-speech";
 import { Share } from "react-native";
 import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 import { useEffect, useRef, useState } from "react";
-import * as Speech from "expo-speech";
 
 export default function SensorsDataCapture() {
   const { deviceId, shareCode } = useDeviceStore();
@@ -97,7 +97,7 @@ export default function SensorsDataCapture() {
         payloadChunks.forEach((chunk, index) => {
           NativeCoapClient?.sendRequest(
             "POST",
-            "192.168.0.194:5683/sensorsData",
+            "172.20.48.1:5683/sensorsData",
             false,
             JSON.stringify({
               index,
@@ -135,9 +135,9 @@ export default function SensorsDataCapture() {
 
   const speakWarning = (message: any) => {
     Speech.speak(message, {
-      language: "pt-BR", // Ajuste o idioma conforme necessário
-      pitch: 1.0, // Tom da voz
-      rate: 1.0, // Velocidade da fala
+      language: "pt-BR",
+      pitch: 1.0,
+      rate: 1.0,
     });
   };
 
@@ -173,22 +173,25 @@ export default function SensorsDataCapture() {
         if (NativeCameraX) {
           console.log("Capturando imagem...");
           const base64Image = await NativeCameraX.captureImage();
+
           console.log("Imagem capturada, processando...");
           const depthMapJson = await NativeDepthEstimation.getDepthMap(
             base64Image
           );
 
           const depthMap = JSON.parse(depthMapJson);
-          console.log("Depth Map (Parsed):", depthMap);
 
           const maxDepthValue = Math.max(...depthMap.flat());
+
           const centralDepthMap = depthMap
             .slice(0, 190)
-            .map((row) => row.slice(64, 194));
+            .map((row: any) => row.slice(64, 194));
+
           const proximityThreshold = 0.7 * maxDepthValue;
+
           const nearbyDetected = centralDepthMap
             .flat()
-            .some((value) => value > proximityThreshold);
+            .some((value: number) => value > proximityThreshold);
 
           console.log(nearbyDetected);
 
@@ -203,20 +206,22 @@ export default function SensorsDataCapture() {
       } catch (error) {
         console.error("Erro ao capturar/processar imagem:", error);
       }
+
       isProcessing = false;
-      setTimeout(captureAndProcess, captureInterval); // Chama de novo após concluir
+      setTimeout(captureAndProcess, captureInterval);
     };
 
     captureAndProcess();
 
     return () => {
       isProcessing = true;
-    }; // Cancela se desmontar
+    };
   }, []);
 
   useEffect(() => {
     if (warningMessage && warningMessage !== prevWarningMessage.current) {
       speakWarning(warningMessage);
+
       prevWarningMessage.current = warningMessage;
     }
   }, [warningMessage]);
