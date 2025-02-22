@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+# SeeSafe App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 📌 Introdução
 
-## Get started
+De acordo com o IBGE, em 2023, o Brasil contava com mais de 6 milhões de pessoas com deficiência visual, sendo aproximadamente 500 mil delas cegas. Para se locomover, essas pessoas geralmente utilizam recursos como cães-guia ou bengalas. Embora eficientes, essas alternativas apresentam limitações, como o alto custo associado aos cães-guia e a incapacidade das bengalas de detectar obstáculos elevados.
 
-1. Install dependencies
+Nos últimos anos, surgiram soluções tecnológicas que oferecem suporte mais avançado, mas seu custo elevado ainda representa uma barreira para ampla adoção. Diante disso, propomos desenvolver um sistema de baixo custo que utiliza a câmera do celular para detectar obstáculos e emitir alertas de áudio ou vibração para o usuário. Esse sistema democratizaria o acesso a soluções tecnológicas e contribuiria para uma maior autonomia de pessoas com deficiência visual.
 
-   ```bash
-   npm install
-   ```
+## 📱 Descrição do aplicativo
 
-2. Start the app
+O aplicativo utiliza visão computacional para processar imagens capturadas pela câmera do celular e identificar obstáculos no caminho do usuário. Além disso, descreve o ambiente ao redor em tempo real por meio de mensagens de áudio ou vibração.
 
-   ```bash
-    npx expo start
-   ```
+### 🔹 Funcionalidades principais
 
-In the output, you'll find options to open the app in a
+- Identificação de obstáculos;
+- Notificação de perigos no caminho;
+- Interface simples e acessível para pessoas com deficiência visual;
+- Possibilidade de envio de informações a um responsável.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🎯 Público-alvo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+O SeeSafe é destinado a pessoas com deficiência visual parcial ou total que buscam uma ferramenta acessível e eficiente para auxiliar na locomoção diária, especialmente em áreas urbanas. Além disso, o aplicativo também atende responsáveis ou cuidadores dessas pessoas, que poderão monitorar informações importantes, como a localização do usuário principal e receber avisos de emergência.
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 🚀 Como executar o aplicativo
+
+Para executar o aplicativo SeeSafe, siga os passos abaixo:
+
+### 1️⃣ Pré-requisitos
+
+- É necessário ter instalado no computador:
+
+  - **Android Studio** e **Java Development Kit (JDK)** (caso este não seja instalado junto do Android Studio).
+
+  Ou
+
+  - **SDK do Android** e o **JDK** separadamente.
+
+- **Variáveis de ambiente**: Certifique-se de que as variáveis de ambiente do Windows para o Android Studio (Android SDK) e o JDK estão corretamente configuradas.
+- **Node.js**: A versão utilizada para desenvolvimento é a `22.13.0 LTS`.
+- **Emulador ou dispositivo real**: Para compilar o aplicativo, é necessário ter uma das seguintes opções configuradas:
+  - Emulador de Android executando.
+  - Dispositivo Android real conectado via cabo USB com **Depuração via USB** habilitada (opções de desenvolvedor do dispositivo).
+- **IP do servidor**: Por causa de alguns problemas com relação ao framework Expo, variáveis de ambiente não foram implementadas. Dessa forma, em todos os lugares que o aplicativo precisa fazer requisição para o servidor, é necessário modificar o IP local do servidor que está escrito manualmente.
+- **Chave de API do Google**: Como o aplicativo substitui o Expo Workflow pelo Bare Workflow, o mapa fornecido pelo React Native precisa de uma chave da API do Google para funcionar corretamente. Pelo mesmo motivo anterior, variáveis de ambiente não puderam ser criadas, então a chave da API estava sendo colocada manualmente em código. Para a versão final do protótipo do aplicativo, essa chave vai ser removida do código por questões de segurança.
+
+### 2️⃣ Instalar as dependências do aplicativo
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3️⃣ Compilar o aplicativo
 
-## Learn more
+```bash
+npm run build-app
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🤝 Contribuição
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e enviar pull requests.
 
-## Join the community
+## 📜 Licença
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Este projeto está licenciado sob a **Creative Commons BY-NC**. Isso significa que você pode usar, modificar e distribuir o código **desde que não o utilize para fins comerciais**. Para mais detalhes, consulte o arquivo LICENSE.

@@ -7,7 +7,7 @@ export default function RootLayout() {
     <GluestackUIProvider mode="light">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="imageCapture" />
+        <Stack.Screen name="sensorsDataCapture" />
         <Stack.Screen name="carer" />
       </Stack>
     </GluestackUIProvider>
