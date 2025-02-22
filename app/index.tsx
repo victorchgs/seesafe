@@ -14,7 +14,7 @@ export default function Index() {
     if (NativeCoapClient) {
       NativeCoapClient?.sendRequest(
         "POST",
-        "192.168.1.3:5683/deviceAuth",
+        "172.20.48.1:5683/deviceAuth",
         true,
         payload
       )

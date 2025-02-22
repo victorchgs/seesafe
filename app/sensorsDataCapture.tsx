@@ -3,8 +3,14 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Center } from "@/components/ui/center";
 import { Heading } from "@/components/ui/heading";
+import { HStack } from "@/components/ui/hstack";
+import { Icon, ShareIcon } from "@/components/ui/icon";
+import { Pressable } from "@/components/ui/pressable";
 import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import NativeCameraX from "@/specs/NativeCameraX";
 import NativeCoapClient from "@/specs/NativeCoapClient";
+import NativeDepthEstimation from "@/specs/NativeDepthEstimation";
 import useDeviceStore from "@/stores/device";
 import * as Location from "expo-location";
 import { router } from "expo-router";
@@ -14,12 +20,10 @@ import {
   Gyroscope,
   GyroscopeMeasurement,
 } from "expo-sensors";
+import * as Speech from "expo-speech";
 import { Share } from "react-native";
-import { useEffect, useRef } from "react";
-import { VStack } from "@/components/ui/vstack";
-import { Pressable } from "@/components/ui/pressable";
-import { Icon, ShareIcon } from "@/components/ui/icon";
-import { HStack } from "@/components/ui/hstack";
+import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
+import { useEffect, useRef, useState } from "react";
 
 export default function SensorsDataCapture() {
   const { deviceId, shareCode } = useDeviceStore();
@@ -29,6 +33,8 @@ export default function SensorsDataCapture() {
   const captureInterval = 100;
   const sendInterval = 6000;
   const maxChunkSize = 700;
+  const [warningMessage, setWarningMessage] = useState("");
+  const prevWarningMessage = useRef("");
 
   const chunkPayload = (payload: string, size: number) => {
     const numChunks = Math.ceil(payload.length / size);
@@ -91,7 +97,7 @@ export default function SensorsDataCapture() {
         payloadChunks.forEach((chunk, index) => {
           NativeCoapClient?.sendRequest(
             "POST",
-            "192.168.1.3:5683/sensorsData",
+            "172.20.48.1:5683/sensorsData",
             false,
             JSON.stringify({
               index,
@@ -127,6 +133,99 @@ export default function SensorsDataCapture() {
     }
   };
 
+  const speakWarning = (message: any) => {
+    Speech.speak(message, {
+      language: "pt-BR",
+      pitch: 1.0,
+      rate: 1.0,
+    });
+  };
+
+  useEffect(() => {
+    const requestCameraPermission = async () => {
+      const permissionStatus = await request(PERMISSIONS.ANDROID.CAMERA);
+
+      if (permissionStatus !== RESULTS.GRANTED) {
+        console.error("Permissão de câmera negada");
+        return;
+      }
+    };
+
+    requestCameraPermission();
+  }, []);
+
+  useEffect(() => {
+    let isProcessing = false;
+
+    const captureAndProcess = async () => {
+      const permissionStatus = await request(PERMISSIONS.ANDROID.CAMERA);
+
+      if (permissionStatus !== RESULTS.GRANTED) {
+        console.error("Permissão de câmera negada");
+        return;
+      }
+
+      if (isProcessing) return;
+
+      isProcessing = true;
+
+      try {
+        if (NativeCameraX) {
+          console.log("Capturando imagem...");
+          const base64Image = await NativeCameraX.captureImage();
+
+          console.log("Imagem capturada, processando...");
+          const depthMapJson = await NativeDepthEstimation.getDepthMap(
+            base64Image
+          );
+
+          const depthMap = JSON.parse(depthMapJson);
+
+          const maxDepthValue = Math.max(...depthMap.flat());
+
+          const centralDepthMap = depthMap
+            .slice(0, 190)
+            .map((row: any) => row.slice(64, 194));
+
+          const proximityThreshold = 0.7 * maxDepthValue;
+
+          const nearbyDetected = centralDepthMap
+            .flat()
+            .some((value: number) => value > proximityThreshold);
+
+          console.log(nearbyDetected);
+
+          const newMessage = nearbyDetected
+            ? "Atenção! Objeto próximo detectado!"
+            : "Não há objetos próximos.";
+
+          setWarningMessage(newMessage);
+        } else {
+          console.log("NativeCameraX não está disponível");
+        }
+      } catch (error) {
+        console.error("Erro ao capturar/processar imagem:", error);
+      }
+
+      isProcessing = false;
+      setTimeout(captureAndProcess, captureInterval);
+    };
+
+    captureAndProcess();
+
+    return () => {
+      isProcessing = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (warningMessage && warningMessage !== prevWarningMessage.current) {
+      speakWarning(warningMessage);
+
+      prevWarningMessage.current = warningMessage;
+    }
+  }, [warningMessage]);
+
   return (
     <Box className="h-full bg-white dark:bg-slate-900">
       <Center className="h-full">
@@ -150,6 +249,14 @@ export default function SensorsDataCapture() {
                   </HStack>
                 </Pressable>
               </VStack>
+            </VStack>
+          </Card>
+        </VStack>
+        <VStack space="lg">
+          <Card>
+            <VStack space="2xl">
+              <Heading size="lg">Monitoramento de Profundidade</Heading>
+              <Text>{warningMessage}</Text>
             </VStack>
           </Card>
         </VStack>
